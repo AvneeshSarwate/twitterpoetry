@@ -3,25 +3,13 @@ from nltk.corpus import wordnet as wn
 import json
 import itertools
 import time as timemodule
+from multiprocessing import Pool
 
-biblejson = json.load(open('bible.txt'))
 
-def cleanBible(bible):
-    for book in bible:
-        chapters = book['chapters']
-        chapterList = []
-        chapterInd = 0
-        for chap in chapters:
-            verseInds = [int(k) for k in chap[str(chapterInd+1)].keys()]
-            verseInds.sort()
-            chapterList.append([chap[str(chapterInd+1)][str(v)] for v in verseInds])
-            chapterInd += 1
-        book['cleanChap'] = chapterList
-        book['allVerses'] = list(itertools.chain.from_iterable(chapterList))
-                                 
-
-cleanBible(biblejson)
-
+# All code for sentece-similarty calculation taken from here 
+# http://nlpforhackers.io/wordnet-sentence-similarity/ 
+def sentence_similarity(sentence1, sentence2):
+    return (sentence_similarity_asym(sentence1, sentence2) + sentence_similarity_asym(sentence2, sentence1)) / 2
  
 def penn_to_wn(tag):
     """ Convert between a Penn Treebank tag to a simplified Wordnet tag """
@@ -50,7 +38,7 @@ def tagged_to_synset(word, tag):
         #print word, "tagging error"
         return None
  
-def sentence_similarity(sentence1, sentence2):
+def sentence_similarity_asym(sentence1, sentence2):
     """ compute the sentence similarity using Wordnet """
     # Tokenize and tag
     sentence1 = pos_tag(word_tokenize(sentence1))
@@ -79,38 +67,78 @@ def sentence_similarity(sentence1, sentence2):
         if best_score is not None:
             score += best_score
             count += 1
-            
+
     if count == 0:
         return 0
     # Average the values
     score /= count
     return score
- 
-sentences = [
-    "Dogs are awesome.",
-    "Some gorgeous creatures are felines.",
-    "Dolphins are swimming mammals.",
-    "Cats are beautiful animals.",
-]
- 
-focus_sentence = "Cats are beautiful animals."
+            
+# returns a version of the bible json with all verses
+# in a book aggreagated into a single list.
+# the initial json was the en_kjv.json file 
+# from here - https://github.com/thiagobodruk/bible/
+# but cleaned to remove non-ascii characters
+def getCleanedBible():
+    biblejson = json.load(open('bible.txt'))
 
-t = timemodule.time()
-vals = []
-print "starting calculation" 
-for sentence in biblejson[0]['allVerses']:
-    vals.append( (focus_sentence, sentence, sentence_similarity(focus_sentence, sentence)))
-    vals.append((sentence, focus_sentence, sentence_similarity(sentence, focus_sentence)))
-print timemodule.time() - t
+    def cleanBible(bible):
+        for book in bible:
+            chapters = book['chapters']
+            chapterList = []
+            chapterInd = 0
+            for chap in chapters:
+                verseInds = [int(k) for k in chap[str(chapterInd+1)].keys()]
+                verseInds.sort()
+                chapterList.append([chap[str(chapterInd+1)][str(v)] for v in verseInds])
+                chapterInd += 1
+            book['cleanChap'] = chapterList
+            book['allVerses'] = list(itertools.chain.from_iterable(chapterList))
+                                     
+    cleanBible(biblejson)
+
+    return biblejson
+
+# I wanted to parallelize the computation of simiarity 
+# of Bible veses to a tweet, but it was a bit trick
+# to get Python's Pool.map to work with arbitrary functions.
+# This class is a hack for getting around using lambda functions 
+# in Pool objects https://stackoverflow.com/a/4827520
+class TweetSim(object):
+    def __init__(self, tweet):
+        self.tweet = tweet
+    def __call__(self, verse):
+        return (sensim.sentence_similarity(self.refSentence, verse), verse)
+
+
+# tweet is the tweet string
+# bookIndex is the index of the book of the Bible
+#     from which the most similar verse will be chosen
+# bible is the bible-object that stores the structured text
+def nearestVerse(tweet, bookIndex, bible, pool):
+    verses = bible[bookIndex]['allVerses']
+    tweetsim = TweetSim(tweet)
+    verseDistances = pool.map(tweetsim, bible[bookIndex]['allVerses'])
+    mostSameVerse = max(verseDistances)
+    return mostSameVerse[1]
+    
+    
+
+if __name__ == "__main__": 
+    
+    biblejson = getCleanedBible()
+    focus_sentence = "Cats are beautiful animals."
+
+    t = timemodule.time()
+    vals = []
+    singleThread = False
+    print "starting calculation", "singleThread", singleThread 
+    if singleThread:
+        for sentence in biblejson[0]['allVerses']:
+            vals.append( (focus_sentence, sentence, sentence_similarity(focus_sentence, sentence)))
+    else:
+        pool = Pool()
+        sensim = SenSim(focus_sentence)
+        vals = pool.map(sensim, biblejson[0]['allVerses'])
+    print timemodule.time() - t
  
-# Similarity("Cats are beautiful animals.", "Dogs are awesome.") = 0.511111111111
-# Similarity("Dogs are awesome.", "Cats are beautiful animals.") = 0.666666666667
- 
-# Similarity("Cats are beautiful animals.", "Some gorgeous creatures are felines.") = 0.833333333333
-# Similarity("Some gorgeous creatures are felines.", "Cats are beautiful animals.") = 0.833333333333
- 
-# Similarity("Cats are beautiful animals.", "Dolphins are swimming mammals.") = 0.483333333333
-# Similarity("Dolphins are swimming mammals.", "Cats are beautiful animals.") = 0.4
- 
-# Similarity("Cats are beautiful animals.", "Cats are beautiful animals.") = 1.0
-# Similarity("Cats are beautiful animals.", "Cats are beautiful animals.") = 1.0

@@ -3,12 +3,25 @@ from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
 from os import curdir, sep
 import cgi
 import logging
-import OSC
 import json
 import threading
 import pickle 
+import sentenceSimilarity as sensim
+from multiprocessing import Pool
 
-PORT_NUMBER = 8081
+PORT_NUMBER = 6310
+
+
+bible = sensim.getCleanedBible
+pool = Pool
+
+# Werapper around sentenceSimilarity.nearestVerse().
+# I didn't want the sentenceSimilarity module to 
+# be stateful or store the bible data or process pool on its own, 
+# so that's why there's this bit of duplication of code
+def nearestVerse(tweet, bibleIndex):
+    return sensim.nearestVerse(tweet, bibleIndex, bible, pool)
+
 
 #This class will handles any incoming request from
 #the browser 
@@ -26,6 +39,21 @@ class myHandler(BaseHTTPRequestHandler):
             sendReply = False
             if self.path.endswith(".html"):
                 mimetype='text/html'
+                sendReply = True
+            if self.path.endswith(".jpg"):
+                mimetype='image/jpg'
+                sendReply = True
+            if self.path.endswith(".gif"):
+                mimetype='image/gif'
+                sendReply = True
+            if self.path.endswith(".js"):
+                mimetype='application/javascript'
+                sendReply = True
+            if self.path.endswith(".css"):
+                mimetype='text/css'
+                sendReply = True
+
+            if sendReply == True:
                 #Open the static file requested and send it
                 f = open(curdir + sep + self.path) 
                 self.send_response(200)
@@ -33,20 +61,6 @@ class myHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(f.read())
                 f.close()
-            if self.path.endswith("/nearestverse"):
-                form = cgi.FieldStorage(
-                    fp=self.rfile, 
-                    headers=self.headers,
-                    environ={'REQUEST_METHOD':'POST',
-                             'CONTENT_TYPE':self.headers['Content-Type'],
-                })
-                mimetype='text/plain'
-                sendReply = True
-                self.send_response(200)
-                self.send_header('Content-type',mimetype)
-                self.end_headers()
-                self.wfile.write(nearestverse(form['tweet'], form['book']))
-                
             return
 
         except IOError:
@@ -69,10 +83,7 @@ class myHandler(BaseHTTPRequestHandler):
         if self.path == "/nearestversePOST":
             self.send_response(200)
             self.end_headers()
-            self.wfile.write(nearestverse(form['tweet'], form['book']))
-
-
-
+            self.wfile.write(nearestVerse(form['tweet'], form['book']))
 
             
 try:
@@ -86,6 +97,4 @@ try:
 
 except KeyboardInterrupt:
     print '^C received, shutting down the web server'
-    scServer.close()
-    scThread.join()
     server.socket.close()
