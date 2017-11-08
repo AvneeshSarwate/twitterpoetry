@@ -83,7 +83,10 @@ class myHandler(BaseHTTPRequestHandler):
         if self.path == "/nearestverse":
             self.send_response(200)
             self.end_headers()
-            responseStr = json.dumps({"verse": nearestVerse(form['tweet'].value, int(form['book'].value))}, separators=(",", ":"))  
+            tweetAscii = ''.join([i if ord(i) < 128 else ' ' for i in form['tweet'].value])
+            verseStr = nearestVerse(tweetAscii, int(form['book'].value))
+            print "VERSE", verseStr
+            responseStr = json.dumps({"verse": verseStr}, separators=(",", ":"))  
             self.wfile.write(responseStr)
 
             

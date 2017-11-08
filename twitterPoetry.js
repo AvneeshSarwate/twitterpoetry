@@ -58,6 +58,7 @@ function queryBible(searchTweets, bookInd){
         },
         function(response){
             matchResponse = response;
+            console.log("RAW RESONSE", response)
             var responseObj = JSON.parse(response);
             bibleMatch.push([searchTweets.tweets[0], responseObj.verse])
             console.log("MATCH RESPONSE", bookInd, searchTweets.tweets[0], responseObj);
@@ -71,8 +72,15 @@ function daddyToGod(twt){
     return tweet;
 }
 
+/*
+twitter search phrases
+crisis of faith
+daddy isues
+artsitic ego
+*/
+
 codeBirdSearch("daddy issues", daddyToGod);
-codeBirdSearch("a crisis of faith", null, function(tweets){queryBible(tweets, 46)});
+codeBirdSearch("elemental forces", null, function(tweets){queryBible(tweets, 46)});
 
 var bibleMatch = [];
 var matchResponse;
@@ -94,13 +102,22 @@ svg.append("path")
 
 //Create an SVG text element and append a textPath element
 svgText = svg.append("text")
-   .append("textPath") //append a textPath to the text element
+    .attr("id", "wavyText")
+    .append("textPath") //append a textPath to the text element
+    .attr("id", "wavyTextPath") //TODO: is this the right way to set ids?
     .attr("xlink:href", "#wavy") //place the ID of the path here
     .style("text-anchor","middle") //place the text halfway on the arc
     .attr("startOffset", "50%");
 
 svgText.text("Yay, my text is on a wavy path");
+
+
+var pathLen = d3.select("#wavy").node().getTotalLength();
+var textLen = svgText.node().getComputedTextLength();
+console.log("LENGTHS", pathLen, textLen);
+
 });
+
 
 function setup() {
     createCanvas(1280, 720);

@@ -74,6 +74,9 @@ def sentence_similarity_asym(sentence1, sentence2):
     score /= count
     return score
             
+
+#TODO: write an ascii cleaner
+
 # returns a version of the bible json with all verses
 # in a book aggreagated into a single list.
 # the initial json was the en_kjv.json file 
@@ -108,8 +111,13 @@ class TweetSim(object):
     def __init__(self, tweet):
         self.tweet = tweet
     def __call__(self, verse):
-        return (sentence_similarity(self.tweet, verse), verse)
+        try:
+            return (sentence_similarity(self.tweet, verse), verse)
+        except Exception as e:
+            print "VERSE ERROR", e, verse
 
+#todo: reneable pooling in nearestVerse after debugging
+#todo: make sure tweets are ascii so nltk doesn't break
 
 # tweet is the tweet string
 # bookIndex is the index of the book of the Bible
