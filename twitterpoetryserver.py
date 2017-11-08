@@ -12,8 +12,8 @@ from multiprocessing import Pool
 PORT_NUMBER = 6310
 
 
-bible = sensim.getCleanedBible
-pool = Pool
+bible = sensim.getCleanedBible()
+pool = Pool()
 
 # Werapper around sentenceSimilarity.nearestVerse().
 # I didn't want the sentenceSimilarity module to 
@@ -83,7 +83,8 @@ class myHandler(BaseHTTPRequestHandler):
         if self.path == "/nearestverse":
             self.send_response(200)
             self.end_headers()
-            self.wfile.write(nearestVerse(form['tweet'], form['book']))
+            responseStr = json.dumps({"verse": nearestVerse(form['tweet'].value, int(form['book'].value))}, separators=(",", ":"))  
+            self.wfile.write(responseStr)
 
             
 try:

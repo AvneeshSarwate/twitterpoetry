@@ -32,7 +32,7 @@ function analyzeTweets(tweetResult, tweetTransform){
     return tweetObj;
 }
 
-function codeBirdSearch(seachString, tweetTransform){
+function codeBirdSearch(seachString, tweetTransform, postTweetLoad){
     var params = {
         q: seachString
     };
@@ -43,6 +43,24 @@ function codeBirdSearch(seachString, tweetTransform){
         function (reply, rate, error) {
             searchTweets = analyzeTweets(reply.statuses, tweetTransform);
             tweets.push(searchTweets);
+            if(postTweetLoad){
+                postTweetLoad(searchTweets);
+            }
+        }
+    );
+}
+
+function queryBible(searchTweets, bookInd){
+    $.post("/nearestverse", 
+        {
+            tweet: searchTweets.tweets[0],
+            book: bookInd
+        },
+        function(response){
+            matchResponse = response;
+            var responseObj = JSON.parse(response);
+            bibleMatch.push([searchTweets.tweets[0], responseObj.verse])
+            console.log("MATCH RESPONSE", bookInd, searchTweets.tweets[0], responseObj);
         }
     );
 }
@@ -54,20 +72,11 @@ function daddyToGod(twt){
 }
 
 codeBirdSearch("daddy issues", daddyToGod);
-codeBirdSearch("a crisis of faith");
+codeBirdSearch("a crisis of faith", null, function(tweets){queryBible(tweets, 46)});
 
-var bibleMatch = "";
+var bibleMatch = [];
 var matchResponse;
 
-$.post("/nearestverse", {
-    tweet: tweets[0].tweets[0],
-    book: 0
-},
-function(response){
-    matchResponse = response;
-    console.log("MATCH RESPONSE", response);
-}
-)
 
 function setup() {
     createCanvas(1280, 720);
@@ -79,11 +88,9 @@ function draw() {
     if(bibleMatch.length > 0) {
         clear();
         textSize(12);
-        text(tweets[0].tweets[tweetIndex], 0, 200);
-        text(tweets[1].tweets[tweetIndex], 0, 30);
-        text(riGrammar.expand(), 0, 500);
-        text(findSubjectPhrase(tweets[0].partitionedTweets[tweetIndex]), 0, 600);
-        tweetIndex = (tweetIndex + 1) % 15;
+        text(bibleMatch[tweetIndex][0], 0, 200);
+        text(bibleMatch[tweetIndex][1], 0, 30);
+        tweetIndex = (tweetIndex + 1) % bibleMatch.length;
     }
 }
 

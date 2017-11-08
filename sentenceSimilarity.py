@@ -108,7 +108,7 @@ class TweetSim(object):
     def __init__(self, tweet):
         self.tweet = tweet
     def __call__(self, verse):
-        return (sensim.sentence_similarity(self.refSentence, verse), verse)
+        return (sentence_similarity(self.tweet, verse), verse)
 
 
 # tweet is the tweet string
