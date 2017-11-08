@@ -80,7 +80,7 @@ class myHandler(BaseHTTPRequestHandler):
                      'CONTENT_TYPE':self.headers['Content-Type'],
         })
 
-        if self.path == "/nearestversePOST":
+        if self.path == "/nearestverse":
             self.send_response(200)
             self.end_headers()
             self.wfile.write(nearestVerse(form['tweet'], form['book']))

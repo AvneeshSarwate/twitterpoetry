@@ -56,8 +56,18 @@ function daddyToGod(twt){
 codeBirdSearch("daddy issues", daddyToGod);
 codeBirdSearch("a crisis of faith");
 
+var bibleMatch = "";
+var matchResponse;
 
-
+$.post("/nearestverse", {
+    tweet: tweets[0].tweets[0],
+    book: 0
+},
+function(response){
+    matchResponse = response;
+    console.log("MATCH RESPONSE", response);
+}
+)
 
 function setup() {
     createCanvas(1280, 720);
@@ -66,7 +76,7 @@ function setup() {
 
 var tweetIndex = 0;
 function draw() {
-    if(tweets.length > 1) {
+    if(bibleMatch.length > 0) {
         clear();
         textSize(12);
         text(tweets[0].tweets[tweetIndex], 0, 200);
