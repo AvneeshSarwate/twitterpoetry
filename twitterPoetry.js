@@ -103,17 +103,55 @@ var svgPath;
 var svgText;
 var svgTextPath; 
 
+var path1 = "M 60,90 Q 160,160 260,90 Q 360,20 460,90";
+var path2 = "M 60,90 Q 160,20 260,90 Q 360,160 460,90"
+
+function pathTween(d1, precision) {
+  return function() {
+    var path0 = this,
+        path1 = path0.cloneNode(),
+        n0 = path0.getTotalLength(),
+        n1 = (path1.setAttribute("d", d1), path1).getTotalLength();
+
+    // Uniform sampling of distance based on specified precision.
+    var distances = [0], i = 0, dt = precision / Math.max(n0, n1);
+    while ((i += dt) < 1) distances.push(i);
+    distances.push(1);
+
+    // Compute point-interpolators at each distance.
+    var points = distances.map(function(t) {
+      var p0 = path0.getPointAtLength(t * n0),
+          p1 = path1.getPointAtLength(t * n1);
+      return d3.interpolate([p0.x, p0.y], [p1.x, p1.y]);
+    });
+
+    return function(t) {
+      return t < 1 ? "M" + points.map(function(p) { return p(t); }).join("L") : d1;
+    };
+  };
+}
+
 $(function() {
 //Create the SVG
 svg = d3.select("body").append("svg")
-        .attr("width", 400)
-        .attr("height", 120);
+        .attr("width", 600)
+        .attr("height", 200);
             
 //Create an SVG path            
 svgPath = svg.append("path")
     .attr("id", "wavy") //very important to give the path element a unique ID to reference later
-    .attr("d", "M 10,90 Q 100,15 200,70 Q 340,140 400,30") //Notation for an SVG path, from bl.ocks.org/mbostock/2565344
-    .style("fill", "none");
+    .attr("d", path2) //Notation for an SVG path, from bl.ocks.org/mbostock/2565344
+    .style("fill", "none")
+    .transition()
+    .duration(2000)
+    .on("start", function repeat() {
+      d3.active(this)
+          .attrTween("d", pathTween(path1, 4))
+        .transition()
+          .attrTween("d", pathTween(path2, 4))
+        .transition()
+          .on("start", repeat);
+    });
     // .style("stroke", "#AAAAAA");
 
 //Create an SVG text element and append a textPath element
