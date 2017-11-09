@@ -99,7 +99,10 @@ var bibleMatch = [];
 var matchResponse;
 
 var svg;
+var svgPath;
 var svgText;
+var svgTextPath; 
+
 $(function() {
 //Create the SVG
 svg = d3.select("body").append("svg")
@@ -107,7 +110,7 @@ svg = d3.select("body").append("svg")
         .attr("height", 120);
             
 //Create an SVG path            
-svg.append("path")
+svgPath = svg.append("path")
     .attr("id", "wavy") //very important to give the path element a unique ID to reference later
     .attr("d", "M 10,90 Q 100,15 200,70 Q 340,140 400,30") //Notation for an SVG path, from bl.ocks.org/mbostock/2565344
     .style("fill", "none");
@@ -115,22 +118,36 @@ svg.append("path")
 
 //Create an SVG text element and append a textPath element
 svgText = svg.append("text")
-    .attr("id", "wavyText")
-    .append("textPath") //append a textPath to the text element
+    .attr("id", "wavyText");
+
+svgTextPath = svgText.append("textPath") //append a textPath to the text element
     .attr("id", "wavyTextPath") //TODO: is this the right way to set ids?
     .attr("xlink:href", "#wavy") //place the ID of the path here
     .style("text-anchor","middle") //place the text halfway on the arc
     .attr("startOffset", "50%");
 
-svgText.text("Yay, my text is on a wavy path");
+svgTextPath.text("Yay, my text is on a wavy path");
 
 
-var pathLen = d3.select("#wavy").node().getTotalLength();
-var textLen = svgText.node().getComputedTextLength();
+var pathLen = svgPath.node().getTotalLength();
+var textLen = svgTextPath.node().getComputedTextLength();
 console.log("LENGTHS", pathLen, textLen);
 
 });
 
+
+function adjustTextSizeOnPath(text, textPath, path){
+    var fontSize = 1;
+    text.attr('font-size', fontSize+'px');
+    var inc = 0.01;
+    var getSign = () => Math.sign(path.node().getTotalLength() - textPath.node().getComputedTextLength());
+    var sign = getSign();
+    console.log("RESIZE", sign);
+    while(sign === getSign()){
+        fontSize += (sign * inc);
+        text.attr('font-size', fontSize+'px');
+    }
+}
 
 function setup() {
     createCanvas(1280, 720);
@@ -145,7 +162,8 @@ function draw() {
         text(bibleMatch[tweetIndex][0], 0, 200);
         text(bibleMatch[tweetIndex][1], 0, 30);
         tweetIndex = (tweetIndex + 1) % bibleMatch.length;
-        svgText.text(bibleMatch[tweetIndex][1]);
+        svgTextPath.text(bibleMatch[tweetIndex][1]);
+        adjustTextSizeOnPath(svgText, svgTextPath, svgPath);
     }
 }
 
