@@ -1,4 +1,6 @@
 
+
+
 var cb = new Codebird;
 cb.setConsumerKey("7lHM870nMiqUMpqf3SWLcPmb8","THBUXCySJXIKsBFwc3DPxLFaFjJbc5guOF08pC6vhZs5Z22qSb");
 cb.setToken("918876421904322560-HLI0klHG803aNbIhM4R3JZrKmMZh0o1", "ZDGLxiCRpRnSuugHjPTr22BHySuEMY8sAAHBj2XFr6Zms");
@@ -33,21 +35,32 @@ function analyzeTweets(tweetResult, tweetTransform){
 }
 
 function codeBirdSearch(seachString, tweetTransform, postTweetLoad){
-    var params = {
-        q: seachString
-    };
+    var codebirdWorking = false;
+    if(codebirdWorking) {
+        var params = {
+            q: seachString
+        };
 
-    cb.__call(
-        "search/tweets",
-        params,
-        function (reply, rate, error) {
-            searchTweets = analyzeTweets(reply.statuses, tweetTransform);
-            tweets.push(searchTweets);
-            if(postTweetLoad){
-                postTweetLoad(searchTweets);
+        cb.__call(
+            "search/tweets",
+            params,
+            function (reply, rate, error) {
+                searchTweets = analyzeTweets(reply.statuses, tweetTransform);
+                tweets.push(searchTweets);
+                if(postTweetLoad){
+                    postTweetLoad(searchTweets);
+                }
             }
+        );
+    }
+    else {
+        var tweetStr = "man what the heck is happening to this country";
+        searchTweets = analyzeTweets([{text: tweetStr}], tweetTransform);
+        tweets.push(searchTweets);
+        if(postTweetLoad){
+            postTweetLoad(searchTweets);
         }
-    );
+    }
 }
 
 function queryBible(searchTweets, bookInd){
@@ -97,8 +110,8 @@ svg = d3.select("body").append("svg")
 svg.append("path")
     .attr("id", "wavy") //very important to give the path element a unique ID to reference later
     .attr("d", "M 10,90 Q 100,15 200,70 Q 340,140 400,30") //Notation for an SVG path, from bl.ocks.org/mbostock/2565344
-    .style("fill", "none")
-    .style("stroke", "#AAAAAA");
+    .style("fill", "none");
+    // .style("stroke", "#AAAAAA");
 
 //Create an SVG text element and append a textPath element
 svgText = svg.append("text")
