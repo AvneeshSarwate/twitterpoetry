@@ -104,7 +104,40 @@ var svgText;
 var svgTextPath; 
 
 var path1 = "M 60,90 Q 160,160 260,90 Q 360,20 460,90";
-var path2 = "M 60,90 Q 160,20 260,90 Q 360,160 460,90"
+var path2 = "M 60,90 Q 160,20 260,90 Q 360,160 460,90";
+
+
+function createWavingText(svg, idBase, pathA, pathB){
+                
+    //Create an SVG path            
+    svgPath = svg.append("path")
+        .attr("id", idBase) //very important to give the path element a unique ID to reference later
+        .attr("d", pathB) //Notation for an SVG path, from bl.ocks.org/mbostock/2565344
+        .style("fill", "none")
+        .transition()
+        .duration(2000)
+        .on("start", function repeat() {
+          d3.active(this)
+              .attrTween("d", pathTween(pathA, 4))
+            .transition()
+              .attrTween("d", pathTween(pathB, 4))
+            .transition()
+              .on("start", repeat);
+        });
+        // .style("stroke", "#AAAAAA");
+
+    //Create an SVG text element and append a textPath element
+    svgText = svg.append("text")
+        .attr("id", idBase+"Text");
+
+    svgTextPath = svgText.append("textPath") //append a textPath to the text element
+        .attr("id", idBase+"TextPath") //TODO: is this the right way to set ids?
+        .attr("xlink:href", '#'+idBase) //place the ID of the path here
+        .style("text-anchor","middle") //place the text halfway on the arc
+        .attr("startOffset", "50%");
+
+    return {path: svgPath, text: svgText, textPath:svgTextPath}
+}
 
 function pathTween(d1, precision) {
   return function() {
@@ -131,50 +164,62 @@ function pathTween(d1, precision) {
   };
 }
 
+var wavingVerse;
+
 $(function() {
 //Create the SVG
 svg = d3.select("body").append("svg")
         .attr("width", 600)
         .attr("height", 200);
             
-//Create an SVG path            
-svgPath = svg.append("path")
-    .attr("id", "wavy") //very important to give the path element a unique ID to reference later
-    .attr("d", path2) //Notation for an SVG path, from bl.ocks.org/mbostock/2565344
-    .style("fill", "none")
-    .transition()
-    .duration(2000)
-    .on("start", function repeat() {
-      d3.active(this)
-          .attrTween("d", pathTween(path1, 4))
-        .transition()
-          .attrTween("d", pathTween(path2, 4))
-        .transition()
-          .on("start", repeat);
-    });
-    // .style("stroke", "#AAAAAA");
+// //Create an SVG path            
+// svgPath = svg.append("path")
+//     .attr("id", "wavy") //very important to give the path element a unique ID to reference later
+//     .attr("d", path2) //Notation for an SVG path, from bl.ocks.org/mbostock/2565344
+//     .style("fill", "none")
+//     .transition()
+//     .duration(2000)
+//     .on("start", function repeat() {
+//       d3.active(this)
+//           .attrTween("d", pathTween(path1, 4))
+//         .transition()
+//           .attrTween("d", pathTween(path2, 4))
+//         .transition()
+//           .on("start", repeat);
+//     });
+//     // .style("stroke", "#AAAAAA");
 
-//Create an SVG text element and append a textPath element
-svgText = svg.append("text")
-    .attr("id", "wavyText");
+// //Create an SVG text element and append a textPath element
+// svgText = svg.append("text")
+//     .attr("id", "wavyText");
 
-svgTextPath = svgText.append("textPath") //append a textPath to the text element
-    .attr("id", "wavyTextPath") //TODO: is this the right way to set ids?
-    .attr("xlink:href", "#wavy") //place the ID of the path here
-    .style("text-anchor","middle") //place the text halfway on the arc
-    .attr("startOffset", "50%");
+// svgTextPath = svgText.append("textPath") //append a textPath to the text element
+//     .attr("id", "wavyTextPath") //TODO: is this the right way to set ids?
+//     .attr("xlink:href", "#wavy") //place the ID of the path here
+//     .style("text-anchor","middle") //place the text halfway on the arc
+//     .attr("startOffset", "50%");
 
-svgTextPath.text("Yay, my text is on a wavy path");
+// svgTextPath.text("Yay, my text is on a wavy path");
 
 
-var pathLen = svgPath.node().getTotalLength();
-var textLen = svgTextPath.node().getComputedTextLength();
+// var pathLen = svgPath.node().getTotalLength();
+// var textLen = svgTextPath.node().getComputedTextLength();
+// console.log("LENGTHS", pathLen, textLen);
+
+wavingVerse = createWavingText(svg, 'verse', path1, path2);
+wavingVerse.textPath.text("Yay, my text is on a wavy path");
+
+var pathLen = wavingVerse.path.node().getTotalLength();
+var textLen = wavingVerse.textPath.node().getComputedTextLength();
 console.log("LENGTHS", pathLen, textLen);
 
 });
 
 
-function adjustTextSizeOnPath(text, textPath, path){
+function adjustTextSizeOnPath(wavingTextObj){
+    var text = wavingTextObj.text;
+    var textPath = wavingTextObj.textPath;
+    var path = wavingTextObj.path;
     var fontSize = 1;
     text.attr('font-size', fontSize+'px');
     var inc = 0.01;
@@ -200,8 +245,8 @@ function draw() {
         text(bibleMatch[tweetIndex][0], 0, 200);
         text(bibleMatch[tweetIndex][1], 0, 30);
         tweetIndex = (tweetIndex + 1) % bibleMatch.length;
-        svgTextPath.text(bibleMatch[tweetIndex][1]);
-        adjustTextSizeOnPath(svgText, svgTextPath, svgPath);
+        wavingVerse.textPath.text(bibleMatch[tweetIndex][1]);
+        adjustTextSizeOnPath(wavingVerse);
     }
 }
 
