@@ -57,7 +57,7 @@ function codeBirdSearch(seachString, tweetTransform, postTweetLoad){
     }
     else {
         var t1 = "man what the heck is happening to this country";
-        var t2 = "Can't wait for the new chicken sandwich from mcdonalds";
+        var t2 = "My cat is so stupid";
         var t3 = "How the fuck does my car always break down right when I need it to work";
         var tweetList = [t1, t2, t3].map((tweet) => {return {text:tweet}});
         searchTweets = analyzeTweets(tweetList, tweetTransform);
@@ -69,19 +69,29 @@ function codeBirdSearch(seachString, tweetTransform, postTweetLoad){
 }
 
 function queryBible(searchTweets, bookInd){
-    $.post("/nearestverse", 
-        {
-            tweet: searchTweets.tweets[0],
-            book: bookInd
-        },
-        function(response){
-            matchResponse = response;
-            console.log("RAW RESONSE", response)
-            var responseObj = JSON.parse(response);
-            bibleMatch.push([searchTweets.tweets[0], responseObj.verse])
-            console.log("MATCH RESPONSE", bookInd, searchTweets.tweets[0], responseObj);
-        }
-    );
+
+    function queryBibleRecursive(searchTweets, bookInd, tweetInd){ 
+        $.post("/nearestverse", 
+            {
+                tweet: searchTweets.tweets[tweetInd],
+                book: bookInd
+            },
+            function(response){
+                matchResponse = response;
+                console.log("RAW RESONSE", tweetInd, response)
+                var responseObj = JSON.parse(response);
+                bibleMatch.push([searchTweets.tweets[tweetInd], responseObj.verse])
+                console.log("MATCH RESPONSE", bookInd, searchTweets.tweets[tweetInd], responseObj);
+                if(bibleMatch.length < searchTweets.tweets.length){
+                    queryBibleRecursive(searchTweets, bookInd, tweetInd+1)
+                }
+                else {
+                    console.log("GOT MATCHES FOR ALL TWEETS", bibleMatch);
+                }
+            }
+        );
+    }
+    queryBibleRecursive(searchTweets, bookInd, 0);
 }
 
 function daddyToGod(twt){

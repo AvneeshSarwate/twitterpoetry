@@ -130,7 +130,11 @@ def nearestVerse(tweet, bookIndex, bible, pool):
     mostSameVerse = max(verseDistances)
     return mostSameVerse[1]
     
-    
+def bookVerseDistances(tweet, bookIndex, bible, pool):
+    verses = bible[bookIndex]['allVerses']
+    tweetsim = TweetSim(tweet)
+    verseDistances = pool.map(tweetsim, bible[bookIndex]['allVerses'])
+    return verseDistances
 
 if __name__ == "__main__": 
     
