@@ -125,27 +125,28 @@ var path2 = "M 60,90 Q 160,20 260,90 Q 360,160 460,90";
 function createWavingText(svg, idBase, pathA, pathB){
                 
     //Create an SVG path            
-    svgPath = svg.append("path")
+    var svgPath = svg.append("path")
         .attr("id", idBase) //very important to give the path element a unique ID to reference later
         .attr("d", pathB) //Notation for an SVG path, from bl.ocks.org/mbostock/2565344
-        .style("fill", "none")
-        .transition()
-        .duration(2000)
-        .on("start", function repeat() {
-          d3.active(this)
-              .attrTween("d", pathTween(pathA, 4))
-            .transition()
-              .attrTween("d", pathTween(pathB, 4))
-            .transition()
-              .on("start", repeat);
-        });
+        .style("fill", "none");
+        
+    // svgPath.transition()
+    //     .duration(2000)
+    //     .on("start", function repeat() {
+    //       d3.active(this)
+    //           .attrTween("d", pathTween(pathA, 4))
+    //         .transition()
+    //           .attrTween("d", pathTween(pathB, 4))
+    //         .transition()
+    //           .on("start", repeat);
+    //     });
         // .style("stroke", "#AAAAAA");
 
     //Create an SVG text element and append a textPath element
-    svgText = svg.append("text")
+    var svgText = svg.append("text")
         .attr("id", idBase+"Text");
 
-    svgTextPath = svgText.append("textPath") //append a textPath to the text element
+    var svgTextPath = svgText.append("textPath") //append a textPath to the text element
         .attr("id", idBase+"TextPath") //TODO: is this the right way to set ids?
         .attr("xlink:href", '#'+idBase) //place the ID of the path here
         .style("text-anchor","middle") //place the text halfway on the arc
@@ -183,12 +184,14 @@ function pathTween(d1, precision) {
 
 var wavingVerse;
 var wavingTweet;
+var textPath;
+var path;
 
 $(function() {
     //Create the SVG
     svg = d3.select("body").append("svg")
-            .attr("width", 600)
-            .attr("height", 200);
+            .attr("width", 1280)
+            .attr("height", 720);
 
     wavingVerse = createWavingText(svg, 'verse', path1, path2);
     wavingVerse.textPath.text("this will be replaced with a bible verse");
@@ -200,6 +203,45 @@ $(function() {
     var textLen = wavingVerse.textPath.node().getComputedTextLength();
     console.log("LENGTHS", pathLen, textLen);
 
+
+    function dragStarted_2() {
+        var d = d3.event.subject,
+                d2 = _.cloneDeep(d),
+                x0 = d3.event.x,
+                y0 = d3.event.y;
+        
+        wavingVerse.path.datum(d);
+        wavingVerse.textPath.datum(d);
+
+        wavingTweet.path.datum(d2);
+        wavingTweet.textPath.datum(d2);
+
+        d3.event.on("drag", function() {
+            var x1 = d3.event.x,
+                    y1 = d3.event.y,
+                    dx = x1 - x0,
+                    dy = y1 - y0;
+            
+            if (dx * dx + dy * dy > 100) {
+                d.push([x1, y1+yDiff]);
+                d2.push([x1, y1-yDiff]);
+                x0 = x1; 
+                y0 = y1;
+            } else {
+                d[d.length - 1] = [x1, y1+yDiff];
+                d2[d.length - 1] = [x1, y1-yDiff];
+            }
+            wavingVerse.textPath.attr("d", d3line);
+            wavingVerse.path.attr("d", d3line);
+            wavingTweet.textPath.attr("d", d3line);
+            wavingTweet.path.attr("d", d3line);
+        });
+    }
+
+    svg.call(d3.drag()
+        .container(function(d) { return this; })
+        .subject(function(d) { var p = [d3.event.x, d3.event.y]; return [p, p]; })
+        .on("start", dragStarted_2)); 
 
 
 
@@ -231,11 +273,11 @@ $(function() {
             .subject(function(d) { var p = [d3.event.x, d3.event.y]; return [p, p]; })
             .on("start", dragStarted));
 
-    var textPath = svg.append("defs").append("path")
+    textPath = svg.append("defs").append("path")
         .attr("id", "textPath")
         .attr("d", startingPath);
 
-    var path = svg.append("path")
+    path = svg.append("path")
         .attr("d", startingPath)
         .style("fill", "none");
 
@@ -309,6 +351,9 @@ function adjustTextSizeOnPath(wavingTextObj){
 }
 
 var sinStep = 0;
+var yDiff = 0;
+var yDiffScale = 80;
+var yDiffStep = 0.08
 
 function setup() {
     createCanvas(1280, 720);
@@ -323,8 +368,11 @@ function draw() {
         clear();
         textSize(12);
         text(bibleMatch[tweetIndex][0], 0, 200);
-        sinStep += 0.01
-        text(""+(Math.sin(sinStep)*30), 0, 100);
+       
+        sinStep += yDiffStep;
+        yDiff = (Math.sin(sinStep)*yDiffScale);
+       
+        text(""+yDiff, 0, 100);
         text(bibleMatch[tweetIndex][1], 0, 30);
         tweetIndex = (tweetIndex + 1) % bibleMatch.length;
         if(!tweetLoaded) { 
