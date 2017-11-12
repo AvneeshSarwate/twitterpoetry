@@ -37,7 +37,7 @@ function analyzeTweets(tweetResult, tweetTransform){
 }
 
 function codeBirdSearch(seachString, tweetTransform, postTweetLoad){
-    var codebirdWorking = false;
+    var codebirdWorking = true;
     if(codebirdWorking) {
         var params = {
             q: seachString
@@ -187,10 +187,10 @@ $(function() {
         .curve(d3.curveBasis);
 
     wavingVerse = createWavingText(svg, 'verse', path1, path2);
-    wavingVerse.textPath.text("this will be replaced with a bible verse");
+    wavingVerse.textPath.text("To read the lines of the poem");
 
     wavingTweet = createWavingText(svg, 'tweet', path2, path1);
-    wavingTweet.textPath.text("A tweet will go here instead");
+    wavingTweet.textPath.text("Click and drag across the screen");
 
     var pathLen = wavingVerse.path.node().getTotalLength();
     var textLen = wavingVerse.textPath.node().getComputedTextLength();
@@ -202,7 +202,7 @@ $(function() {
                 d2 = _.cloneDeep(d),
                 x0 = d3.event.x,
                 y0 = d3.event.y;
-        
+        console.log("path datum", d);
         wavingVerse.textPath.text(bibleMatch[drawTweetInd][1]);
         wavingVerse.path.datum(d);
         wavingVerse.textPath.datum(d);
@@ -210,6 +210,11 @@ $(function() {
         wavingTweet.textPath.text(bibleMatch[drawTweetInd][0]);
         wavingTweet.path.datum(d2);
         wavingTweet.textPath.datum(d2);
+
+        wavingVerse.textPath.attr("d", d3line);
+        wavingVerse.path.attr("d", d3line);
+        wavingTweet.textPath.attr("d", d3line);
+        wavingTweet.path.attr("d", d3line);
 
         drawTweetInd = (drawTweetInd+1) % bibleMatch.length;
 
