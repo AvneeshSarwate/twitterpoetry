@@ -8,6 +8,8 @@ from multiprocessing import Pool
 
 # All code for sentece-similarty calculation taken from here 
 # http://nlpforhackers.io/wordnet-sentence-similarity/ 
+# The next 4 functions are used to calculate a similarity score between 
+# sentences [0-1] using WordNet
 def sentence_similarity(sentence1, sentence2):
     return (sentence_similarity_asym(sentence1, sentence2) + sentence_similarity_asym(sentence2, sentence1)) / 2
  
@@ -123,19 +125,24 @@ class TweetSim(object):
 # bookIndex is the index of the book of the Bible
 #     from which the most similar verse will be chosen
 # bible is the bible-object that stores the structured text
+# Returns the verse in the given book with the highest simiarlity
+#     score relative to the given tweet
 def nearestVerse(tweet, bookIndex, bible, pool):
     verses = bible[bookIndex]['allVerses']
     tweetsim = TweetSim(tweet)
     verseDistances = pool.map(tweetsim, bible[bookIndex]['allVerses'])
     mostSameVerse = max(verseDistances)
     return mostSameVerse[1]
-    
+
+#debugger method, same as nearestVerse() but returns all distance/sentence pairs     
 def bookVerseDistances(tweet, bookIndex, bible, pool):
     verses = bible[bookIndex]['allVerses']
     tweetsim = TweetSim(tweet)
     verseDistances = pool.map(tweetsim, bible[bookIndex]['allVerses'])
     return verseDistances
 
+
+## main method to test query speed
 if __name__ == "__main__": 
     
     biblejson = getCleanedBible()

@@ -1,0 +1,76 @@
+Note: this is my design journal as copy pasted from my Mac notes app
+
+
+
+
+
+places to look for inspiration
+- http://eliterature.org/
+- https://nickm.com/poems/
+- http://sfpc.io/ 
+- http://modes.io/listening-post-ten-years-on/
+- Ian Boost - a slow year - https://vimeo.com/9592601
+- https://nlp.stanford.edu/pubs/lilt15.pdf
+- Todd Anderson on twitter toddwords 
+
+
+find out how to get wordnet into browser - just host whole db in browser memory 
+
+http://nlpforhackers.io/wordnet-sentence-similarity/ 
+http://www.cortical.io/similarity-explorer.html 
+https://stackoverflow.com/questions/62328/is-there-an-algorithm-that-tells-the-semantic-similarity-of-two-phrases
+https://stackoverflow.com/a/63138 
+
+
+ serverside libraries needed - 
+- nltk
+- nltk.download('punkt')
+- nltk.download('averaged_perceptron_tagger')
+- nltk.download('wordnet')
+
+design journal - 
+- notes from labExcercise.js
+- experimenting with string/phrase substitutions (daddy issues, etc)
+    - linking thematic concepts between traditional paradise lost + Eamon’s reading of it, or linking tweets to paradise lost via those concepts
+- really wanted to do something generative with the rita grammar but couldn’t think of anything
+    - still very tied to more standard notion of “poetry” rather than just “data driven interactive words” (i.e. - charlie’s chatbot or jeremy’s map) - not that they are bad art, but just different from “poetry”)
+- the tweets themselves are fairly “noisy” - hard to make any assumptions of what you’re going to get from a search
+    - could explore grabbing tweets from specific accounts to add some predictability to it
+        - not that into this - hard to find decent accounts that give me what I want, also it loses some of the interestingness of extracting some “meaning” from “a random sampling of all of twitter” 
+- want to use the tweets meaningfully - if i totally deconstruct the tweets and use them as a bag of words, or transformed them in some heavy handed overly specific way, then the tweets effectively just act as a crappy version of a random seed or a language corpus - they are just a crappy version of something else i could use, rather than meaningful data in and of themselves
+- hard to find a good way to reconcile previous 2/3 points
+- really, what i feel like i need is some way to determine relationships between tweets and verses
+- It would be helpful if i had some semantic “distance” function defined on sentences
+- I can’t reliably construct higher level semantic correspondence between tweets and bible verses, but I can just let the reader do it - (describe final idea: spatialize tweets/verses to force “conjoined reading” that hopefully forces melded conception of tweet/verse) 
+
+How specifically to visualize 
+- Want reader to be able to discern what is tweet vs verse, but not be able to ignore the other 
+- Want to suggest "alternative paths" of reading it
+- A zigzag where paths cross each other (seems hard in processing) - could do it letter by letter 
+- Animate it? 
+- Google - javascript layout text on a path
+    - https://codepen.io/pnowell/pen/wWQVmg?css-preprocessor=scss
+        - static path
+    - https://www.visualcinnamon.com/2015/09/placing-text-on-arcs.html 
+        - placing text on curving paths using d3
+        - if i have time, i can even use force layouts and animation 
+    - getting text to resize based on text path
+        - https://stackoverflow.com/questions/6800478/svg-textpath-determine-when-text-goes-beyond-the-path
+        - (mesh with d3) https://stackoverflow.com/questions/42718803/equivalent-method-of-getcomputedtextlength-in-d3-js
+    - generating curves through random points
+        - http://schepers.cc/getting-to-the-point
+- The stolen examples used to get basic animation working actually look pretty good
+    - modify them to be a double helix like pattern - one sine wave is a tweet, the other phased sine wave is a bible verse, then interpolate back and forth
+- drawing the paths for the text with your mouse
+    - https://bl.ocks.org/armollica/90ff1d55f7a8fdbf42500558e1c6d1f5
+- every successive draw path will give the next verse/tweet for whatever is in the match list
+    - tweets will be loaded recursively and added to the match list 
+- bible books - mark, romans, leviticus, corinthians 1/2, revelations  
+    - 40 44 2 45 46 65
+
+How to deal with long delay for processing similarity
+- find best tweet by book, rather than across the whole bible
+- start with verses from shorter books for faster initial presentation
+    - dynamically query more tweets while older matches cycle through
+- try to match twitter search query to some themes of the corresponding book the tweets will be matched against
+- 

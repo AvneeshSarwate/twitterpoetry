@@ -15,7 +15,7 @@ PORT_NUMBER = 6310
 bible = sensim.getCleanedBible()
 pool = Pool()
 
-# Werapper around sentenceSimilarity.nearestVerse().
+# Wrapper around sentenceSimilarity.nearestVerse().
 # I didn't want the sentenceSimilarity module to 
 # be stateful or store the bible data or process pool on its own, 
 # so that's why there's this bit of duplication of code
@@ -80,6 +80,7 @@ class myHandler(BaseHTTPRequestHandler):
                      'CONTENT_TYPE':self.headers['Content-Type'],
         })
 
+        # the endpoint that calls the nearestVerse function
         if self.path == "/nearestverse":
             self.send_response(200)
             self.end_headers()

@@ -8,15 +8,19 @@ cb.setProxy("https://peaceful-sea-11713.herokuapp.com/");
 
 
 console.log(cb);
+
 var tweets = [];
 
-
+//removes retweet prefixes and trailing hyperlinks from tweets
 function cleanTweet(tweet){
     var rtSplit = tweet.split(/RT @[a-zA-Z0-9_]*: /);
     var twt = rtSplit[1%rtSplit.length];
     return twt.split(/https?:/)[0];
 }
 
+//Analyzes a set of tweets w/ rita
+//This was used in earlier experiments but isn't any more, but is too
+//embeded in the existing code to remove last-minute (which is when all code cleanup happens)
 function analyzeTweets(tweetResult, tweetTransform){
     var tweetObj = {tweets: [], riTweets: [], tokens: [], posTags: [], partitionedTweets: []};
     for(var i = 0; i < tweetResult.length; i++){
@@ -34,6 +38,12 @@ function analyzeTweets(tweetResult, tweetTransform){
     return tweetObj;
 }
 
+// a wrapper function for twitter search with codebird
+// search string is the query string
+// tweet transform a function that is used to transform tweets 
+//      (a holdover from earlier experiments)
+// postTeetLoad is a generic function of what to do with the cleaned/processed set of tweets
+//      (here, used to kick off the sentence similarity search against the bible using wordnet)
 function codeBirdSearch(seachString, tweetTransform, postTweetLoad){
     var codebirdWorking = true;
     if(codebirdWorking) {
@@ -66,21 +76,27 @@ function codeBirdSearch(seachString, tweetTransform, postTweetLoad){
     }
 }
 
-function queryBible(searchTweets, bookInd){
+/*a function to recursively query the server for the "most similar" bible verse 
+for each tweet. The similarity-search endpoint takes some time (2-7 seconds) to respond per tweet, 
+and I want the tweet-verse pairs to be available as fast as possible, so I used this 
+recursive method to make the tweet-verse pairs available one by one rather than doing
+them in batch and waiting ~1 minute for the whole set of tweet-verse pairs
+*/
+function queryBible(searchTweets, bookInds){
 
-    function queryBibleRecursive(searchTweets, bookInd, tweetInd){ 
+    function queryBibleRecursive(searchTweets, bookInds, tweetInd){ 
         $.post("/nearestverse", 
             {
                 tweet: searchTweets.tweets[tweetInd],
-                book: bookInd
+                book: bookInds[tweetInd%bookInds.length]
             },
             function(response){
-                //console.log("RAW RESONSE", tweetInd, response)
+                console.log("RAW RESONSE", tweetInd, response)
                 var responseObj = JSON.parse(response);
                 bibleMatch.push([searchTweets.tweets[tweetInd], responseObj.verse])
-                //console.log("MATCH RESPONSE", bookInd, searchTweets.tweets[tweetInd], responseObj);
+                console.log("MATCH RESPONSE", bookInds[tweetInd%bookInds.length], searchTweets.tweets[tweetInd], responseObj);
                 if(bibleMatch.length < searchTweets.tweets.length){
-                    queryBibleRecursive(searchTweets, bookInd, tweetInd+1)
+                    queryBibleRecursive(searchTweets, bookInds, tweetInd+1)
                 }
                 else {
                     console.log("GOT MATCHES FOR ALL TWEETS", bibleMatch);
@@ -88,32 +104,25 @@ function queryBible(searchTweets, bookInd){
             }
         );
     }
-    queryBibleRecursive(searchTweets, bookInd, 0);
+    queryBibleRecursive(searchTweets, bookInds, 0);
 }
 
 
-/*
-twitter search phrases
-crisis of faith
-daddy isues
-artsitic ego
-*/
-
+//this holds the tweet-verse pairs
 var bibleMatch = [];
 
-codeBirdSearch("elemental forces", null, function(tweets){queryBible(tweets, 46)});
+codeBirdSearch("elemental forces", null, (tweets) => {queryBible(tweets, [40, 44, 2, 45, 46, 65])});
 
 
 
-var svg;
-var svgPath;
-var svgText;
-var svgTextPath; 
-
+//these paths define the 
 var path1 = "M 60,90 Q 160,160 260,90 Q 360,20 460,90";
 var path2 = "M 60,90 Q 160,20 260,90 Q 360,160 460,90";
 
 
+/* this function creates the initial criss cross pattern of the intro text.
+the code structuring is a bit of a holdover from an earlier experiment.
+*/
 function createWavingText(svg, idBase, pathA, pathB){
                 
     //Create an SVG path            
@@ -138,14 +147,15 @@ function createWavingText(svg, idBase, pathA, pathB){
 
 
 
-var wavingVerse;
-var wavingTweet;
-var textPath;
-var path;
+var wavingVerse; //the svg element holding the displayed bible verse
+var wavingTweet; //the svg element holding the displayed tweet
+
+//the index of the tweet-verse pair to draw
 var drawTweetInd = 0;
 
 $(function() {
-    //Create the SVG
+
+    //Create the SVG elements and displays the intro text using the d3 library
     svg = d3.select("body").append("svg")
             .attr("width", 1280)
             .attr("height", 720);
@@ -155,15 +165,19 @@ $(function() {
 
     wavingVerse = createWavingText(svg, 'verse', path1, path2);
     wavingVerse.textPath.text("To read the lines of the poem");
-
     wavingTweet = createWavingText(svg, 'tweet', path2, path1);
     wavingTweet.textPath.text("Click and drag across the screen");
 
-    var pathLen = wavingVerse.path.node().getTotalLength();
-    var textLen = wavingVerse.textPath.node().getComputedTextLength();
-    console.log("LENGTHS", pathLen, textLen);
 
 
+
+    //defines the dragging drawing/animation using the d3 library
+/*
+drawing explanation - the user draws a path across the screen. The verse text is laid
+out on a path p1 that is the drawn path + some yDeviation value. The tweet text is laid
+out on a path p2 that is the drawn path - that same yDeviation value. The yDeviation
+value varies sinusoidally in time (and is controlled by the p5 draw loop below)
+*/
     function dragStarted_2() {
         var d = d3.event.subject,
                 d2 = _.cloneDeep(d),
@@ -218,6 +232,7 @@ $(function() {
 });
 
 
+//this block sinusoidally varries the yDeviation value of the animation
 var sinStep = 0;
 var yDiff = 0;
 var yDiffScale = 80;
@@ -227,7 +242,6 @@ function setup() {
     // createCanvas(1280, 720);
     frameRate(60);
 }
-
 
 var tweetIndex = 0;
 function draw() {
