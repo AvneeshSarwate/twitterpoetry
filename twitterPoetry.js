@@ -9,8 +9,6 @@ cb.setProxy("https://peaceful-sea-11713.herokuapp.com/");
 
 console.log(cb);
 var tweets = [];
-var partitionedTweets = [];
-var searchTweets = {};
 
 
 function cleanTweet(tweet){
@@ -47,7 +45,7 @@ function codeBirdSearch(seachString, tweetTransform, postTweetLoad){
             "search/tweets",
             params,
             function (reply, rate, error) {
-                searchTweets = analyzeTweets(reply.statuses, tweetTransform);
+                var searchTweets = analyzeTweets(reply.statuses, tweetTransform);
                 tweets.push(searchTweets);
                 if(postTweetLoad){
                     postTweetLoad(searchTweets);
@@ -60,7 +58,7 @@ function codeBirdSearch(seachString, tweetTransform, postTweetLoad){
         var t2 = "My cat is so stupid";
         var t3 = "How the fuck does my car always break down right when I need it to work";
         var tweetList = [t1, t2, t3].map((tweet) => {return {text:tweet}});
-        searchTweets = analyzeTweets(tweetList, tweetTransform);
+        var searchTweets = analyzeTweets(tweetList, tweetTransform);
         tweets.push(searchTweets);
         if(postTweetLoad){
             postTweetLoad(searchTweets);
@@ -77,11 +75,10 @@ function queryBible(searchTweets, bookInd){
                 book: bookInd
             },
             function(response){
-                matchResponse = response;
-                console.log("RAW RESONSE", tweetInd, response)
+                //console.log("RAW RESONSE", tweetInd, response)
                 var responseObj = JSON.parse(response);
                 bibleMatch.push([searchTweets.tweets[tweetInd], responseObj.verse])
-                console.log("MATCH RESPONSE", bookInd, searchTweets.tweets[tweetInd], responseObj);
+                //console.log("MATCH RESPONSE", bookInd, searchTweets.tweets[tweetInd], responseObj);
                 if(bibleMatch.length < searchTweets.tweets.length){
                     queryBibleRecursive(searchTweets, bookInd, tweetInd+1)
                 }
@@ -94,11 +91,6 @@ function queryBible(searchTweets, bookInd){
     queryBibleRecursive(searchTweets, bookInd, 0);
 }
 
-function daddyToGod(twt){
-    var tweet = twt.replace(/[Dd]addy[ -]?[Ii]ssues/, "problems with GOD");
-    tweet = tweet.replace(/([Dd]add?y?)|([Ff]ather)/, "GOD");
-    return tweet;
-}
 
 /*
 twitter search phrases
@@ -107,11 +99,11 @@ daddy isues
 artsitic ego
 */
 
-codeBirdSearch("daddy issues", daddyToGod);
+var bibleMatch = [];
+
 codeBirdSearch("elemental forces", null, function(tweets){queryBible(tweets, 46)});
 
-var bibleMatch = [];
-var matchResponse;
+
 
 var svg;
 var svgPath;
@@ -144,32 +136,7 @@ function createWavingText(svg, idBase, pathA, pathB){
     return {path: svgPath, text: svgText, textPath:svgTextPath}
 }
 
-// this functinon and general path interpolation strategy taken from 
-//here - https://bl.ocks.org/mbostock/3916621
-function pathTween(d1, precision) {
-  return function() {
-    var path0 = this,
-        path1 = path0.cloneNode(),
-        n0 = path0.getTotalLength(),
-        n1 = (path1.setAttribute("d", d1), path1).getTotalLength();
 
-    // Uniform sampling of distance based on specified precision.
-    var distances = [0], i = 0, dt = precision / Math.max(n0, n1);
-    while ((i += dt) < 1) distances.push(i);
-    distances.push(1);
-
-    // Compute point-interpolators at each distance.
-    var points = distances.map(function(t) {
-      var p0 = path0.getPointAtLength(t * n0),
-          p1 = path1.getPointAtLength(t * n1);
-      return d3.interpolate([p0.x, p0.y], [p1.x, p1.y]);
-    });
-
-    return function(t) {
-      return t < 1 ? "M" + points.map(function(p) { return p(t); }).join("L") : d1;
-    };
-  };
-}
 
 var wavingVerse;
 var wavingTweet;
@@ -203,11 +170,15 @@ $(function() {
                 x0 = d3.event.x,
                 y0 = d3.event.y;
         console.log("path datum", d);
-        wavingVerse.textPath.text(bibleMatch[drawTweetInd][1]);
+
+        if(bibleMatch.length > 0 ) {
+            wavingVerse.textPath.text(bibleMatch[drawTweetInd][1]);
+            wavingTweet.textPath.text(bibleMatch[drawTweetInd][0]);
+        }
+
         wavingVerse.path.datum(d);
         wavingVerse.textPath.datum(d);
 
-        wavingTweet.textPath.text(bibleMatch[drawTweetInd][0]);
         wavingTweet.path.datum(d2);
         wavingTweet.textPath.datum(d2);
 
@@ -216,7 +187,7 @@ $(function() {
         wavingTweet.textPath.attr("d", d3line);
         wavingTweet.path.attr("d", d3line);
 
-        drawTweetInd = (drawTweetInd+1) % bibleMatch.length;
+        if(bibleMatch.length > 0 ) drawTweetInd = (drawTweetInd+1) % bibleMatch.length;
 
         d3.event.on("drag", function() {
             var x1 = d3.event.x,
@@ -244,31 +215,8 @@ $(function() {
         .container(function(d) { return this; })
         .subject(function(d) { var p = [d3.event.x, d3.event.y]; return [p, p]; })
         .on("start", dragStarted_2)); 
-
-
-
-
-
-
-
 });
 
-
-function adjustTextSizeOnPath(wavingTextObj){
-    var text = wavingTextObj.text;
-    var textPath = wavingTextObj.textPath;
-    var path = wavingTextObj.path;
-    var fontSize = 1;
-    text.attr('font-size', fontSize+'px');
-    var inc = 0.01;
-    var getSign = () => Math.sign(path.node().getTotalLength() - textPath.node().getComputedTextLength());
-    var sign = getSign();
-    console.log("RESIZE", sign);
-    while(sign === getSign()){
-        fontSize += (sign * inc);
-        text.attr('font-size', fontSize+'px');
-    }
-}
 
 var sinStep = 0;
 var yDiff = 0;
@@ -280,29 +228,10 @@ function setup() {
     frameRate(60);
 }
 
-var tweetLoaded = false;
 
 var tweetIndex = 0;
 function draw() {
     sinStep += yDiffStep;
     yDiff = (Math.sin(sinStep)*yDiffScale);
-
-    if(false && bibleMatch.length > 0) {
-        clear();
-        textSize(12);
-        text(bibleMatch[tweetIndex][0], 0, 200);
-       
-       
-        text(""+yDiff, 0, 100);
-        text(bibleMatch[tweetIndex][1], 0, 30);
-        tweetIndex = (tweetIndex + 1) % bibleMatch.length;
-        if(!tweetLoaded) { 
-            tweetLoaded = true;
-            wavingTweet.textPath.text(bibleMatch[tweetIndex][0]);
-            wavingVerse.textPath.text(bibleMatch[tweetIndex][1]);
-            adjustTextSizeOnPath(wavingVerse);
-            adjustTextSizeOnPath(wavingTweet);
-        }
-    }
 }
 
